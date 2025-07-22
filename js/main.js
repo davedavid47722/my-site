@@ -232,152 +232,308 @@ Created: Colorib
         $(this).addClass('active');
     });
 
-    // === CART & BUTTON FUNCTIONALITY ADDED ===
+    // === ENHANCED CART & BUTTON FUNCTIONALITY ===
 
-    // Utility functions for cart
+    // Utility functions for cart management
     function getCart() {
-        return JSON.parse(localStorage.getItem('cart') || '[]');
+        try {
+            return JSON.parse(localStorage.getItem('cart') || '[]');
+        } catch (e) {
+            console.error('Error reading cart:', e);
+            return [];
+        }
     }
+
     function setCart(cart) {
-        localStorage.setItem('cart', JSON.stringify(cart));
+        try {
+            localStorage.setItem('cart', JSON.stringify(cart));
+        } catch (e) {
+            console.error('Error saving cart:', e);
+        }
     }
+
     function updateCartCount() {
         var cart = getCart();
-        var count = cart.reduce((sum, item) => sum + item.quantity, 0);
-        // Update all cart icons
+        var count = cart.reduce(function(sum, item) { return sum + item.quantity; }, 0);
+        
+        // Update all cart badge icons
+        $('.tip').text(count);
+        
+        // If no tip elements exist, create them
         $('.icon_bag_alt').each(function() {
-            var tip = $(this).siblings('.tip');
-            if (tip.length) tip.text(count);
-            else $(this).after('<div class="tip">' + count + '</div>');
+            if ($(this).siblings('.tip').length === 0) {
+                $(this).after('<div class="tip">' + count + '</div>');
+            }
         });
     }
 
-    // Add to cart button (on product-details.html)
-    $('button.cart-btn, .cart-btn').on('click', function(e) {
-        e.preventDefault();
-        var $pd = $(this).closest('.product__details__text');
-        var name = $pd.find('h3').clone().children().remove().end().text().trim();
-        var priceText = $pd.find('.product__details__price').text().trim();
-        var price = parseFloat(priceText.split('$')[1]);
-        var img = $('.product__big__img').first().attr('src');
-        var qty = parseInt($pd.find('.pro-qty input').val()) || 1;
-        var cart = getCart();
-        var existing = cart.find(item => item.name === name);
-        if (existing) {
-            existing.quantity += qty;
+    function showMessage(message, type) {
+        type = type || 'success';
+        if (typeof alert !== 'undefined') {
+            alert(message);
         } else {
-            cart.push({ name, price, img, quantity: qty });
+            console.log(message);
         }
-        setCart(cart);
-        updateCartCount();
-        alert('Added to cart!');
+    }
+
+    // Add to cart functionality (product-details.html)
+    $(document).on('click', '.cart-btn', function(e) {
+        e.preventDefault();
+        
+        try {
+            var $productSection = $(this).closest('.product__details__text');
+            var name = $productSection.find('h3').clone().children().remove().end().text().trim();
+            var priceText = $productSection.find('.product__details__price').text().trim();
+            var price = parseFloat(priceText.replace(/[^0-9.]/g, ''));
+            var qty = parseInt($productSection.find('.pro-qty input').val()) || 1;
+            var img = $('.product__big__img').first().attr('src') || 'img/product/product-1.jpg';
+            
+            if (!name || !price) {
+                showMessage('Error: Product information not found', 'error');
+                return;
+            }
+
+            var cart = getCart();
+            var existingItem = cart.find(function(item) { return item.name === name; });
+            
+            if (existingItem) {
+                existingItem.quantity += qty;
+            } else {
+                cart.push({
+                    name: name,
+                    price: price,
+                    img: img,
+                    quantity: qty
+                });
+            }
+            
+            setCart(cart);
+            updateCartCount();
+            showMessage('Product added to cart successfully!');
+            
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+            showMessage('Error adding product to cart', 'error');
+        }
     });
 
-    // On all pages, update cart count on load
+    // Add to cart from product hover icons (index.html, shop.html, etc.)
+    $(document).on('click', '.product__hover .icon_bag_alt', function(e) {
+        e.preventDefault();
+        
+        try {
+            var $productItem = $(this).closest('.product__item');
+            var name = $productItem.find('h6 a').text().trim();
+            var priceText = $productItem.find('.product__price').text().trim();
+            var price = parseFloat(priceText.replace(/[^0-9.]/g, ''));
+            var img = $productItem.find('.set-bg').data('setbg') || 'img/product/product-1.jpg';
+            
+            if (!name || !price) {
+                showMessage('Error: Product information not found', 'error');
+                return;
+            }
+
+            var cart = getCart();
+            var existingItem = cart.find(function(item) { return item.name === name; });
+            
+            if (existingItem) {
+                existingItem.quantity += 1;
+            } else {
+                cart.push({
+                    name: name,
+                    price: price,
+                    img: img,
+                    quantity: 1
+                });
+            }
+            
+            setCart(cart);
+            updateCartCount();
+            showMessage('Product added to cart!');
+            
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+            showMessage('Error adding product to cart', 'error');
+        }
+    });
+
+    // Initialize cart count on page load
     $(document).ready(function() {
         updateCartCount();
     });
 
-    // Cart page logic (shop-cart.html)
+    // Cart page functionality (shop-cart.html)
     if (window.location.pathname.includes('shop-cart.html')) {
         function renderCart() {
             var cart = getCart();
             var $tbody = $('.shop__cart__table tbody');
+            var $totals = $('.cart__total__procced ul');
+            
             $tbody.empty();
+            
+            if (cart.length === 0) {
+                $tbody.append('<tr><td colspan="5" style="text-align: center; padding: 50px;">Your cart is empty</td></tr>');
+                $totals.html('<li>Subtotal <span>$ 0.00</span></li><li>Total <span>$ 0.00</span></li>');
+                return;
+            }
+            
             var subtotal = 0;
-            cart.forEach((item, idx) => {
+            
+            cart.forEach(function(item, idx) {
                 var total = item.price * item.quantity;
                 subtotal += total;
-                $tbody.append(`
-                    <tr data-idx="${idx}">
-                        <td class="cart__product__item">
-                            <img src="${item.img}" alt="">
-                            <div class="cart__product__item__title">
-                                <h6>${item.name}</h6>
-                            </div>
-                        </td>
-                        <td class="cart__price">$ ${item.price.toFixed(2)}</td>
-                        <td class="cart__quantity">
-                            <div class="pro-qty"><input type="text" value="${item.quantity}"></div>
-                        </td>
-                        <td class="cart__total">$ ${(total).toFixed(2)}</td>
-                        <td class="cart__close"><span class="icon_close"></span></td>
-                    </tr>
-                `);
+                
+                $tbody.append(
+                    '<tr data-idx="' + idx + '">' +
+                        '<td class="cart__product__item">' +
+                            '<img src="' + item.img + '" alt="" style="width: 80px;">' +
+                            '<div class="cart__product__item__title">' +
+                                '<h6>' + item.name + '</h6>' +
+                            '</div>' +
+                        '</td>' +
+                        '<td class="cart__price">$ ' + item.price.toFixed(2) + '</td>' +
+                        '<td class="cart__quantity">' +
+                            '<div class="pro-qty">' +
+                                '<input type="text" value="' + item.quantity + '">' +
+                            '</div>' +
+                        '</td>' +
+                        '<td class="cart__total">$ ' + total.toFixed(2) + '</td>' +
+                        '<td class="cart__close"><span class="icon_close"></span></td>' +
+                    '</tr>'
+                );
             });
-            // Update totals
-            $('.cart__total__procced ul').html(`
-                <li>Subtotal <span>$ ${subtotal.toFixed(2)}</span></li>
-                <li>Total <span>$ ${subtotal.toFixed(2)}</span></li>
-            `);
+            
+            $totals.html(
+                '<li>Subtotal <span>$ ' + subtotal.toFixed(2) + '</span></li>' +
+                '<li>Total <span>$ ' + subtotal.toFixed(2) + '</span></li>'
+            );
         }
+        
+        // Render cart on page load
         renderCart();
-        // Remove item
-        $('.shop__cart__table').on('click', '.icon_close', function() {
+        
+        // Remove item from cart
+        $(document).on('click', '.icon_close', function() {
             var idx = $(this).closest('tr').data('idx');
             var cart = getCart();
             cart.splice(idx, 1);
             setCart(cart);
             renderCart();
             updateCartCount();
+            showMessage('Item removed from cart');
         });
+        
         // Update quantity
-        $('.shop__cart__table').on('change', '.pro-qty input', function() {
+        $(document).on('change', '.shop__cart__table .pro-qty input', function() {
             var idx = $(this).closest('tr').data('idx');
-            var cart = getCart();
-            var val = parseInt($(this).val());
-            if (val > 0) cart[idx].quantity = val;
-            setCart(cart);
-            renderCart();
-            updateCartCount();
+            var newQty = parseInt($(this).val());
+            
+            if (newQty > 0) {
+                var cart = getCart();
+                cart[idx].quantity = newQty;
+                setCart(cart);
+                renderCart();
+                updateCartCount();
+            }
         });
-        // Proceed to checkout
-        $('button.primary-btn, .primary-btn').on('click', function(e) {
-            e.preventDefault();
-            window.location.href = 'checkout.html';
+        
+        // Proceed to checkout button
+        $(document).on('click', '.primary-btn', function(e) {
+            var cart = getCart();
+            if (cart.length === 0) {
+                e.preventDefault();
+                showMessage('Your cart is empty!');
+                return;
+            }
+            // Allow normal navigation to checkout
         });
     }
 
-    // Checkout page logic (checkout.html)
+    // Checkout page functionality (checkout.html)
     if (window.location.pathname.includes('checkout.html')) {
         var cart = getCart();
         var subtotal = 0;
         var $orderList = $('.checkout__order__product ul');
-        $orderList.empty();
-        $orderList.append('<li><span class="top__text">Product</span><span class="top__text__right">Total</span></li>');
-        cart.forEach((item, idx) => {
-            var total = item.price * item.quantity;
-            subtotal += total;
-            $orderList.append(`<li>${item.name} x${item.quantity} <span>$ ${total.toFixed(2)}</span></li>`);
-        });
-        $('.checkout__order__total ul').html(`
-            <li>Subtotal <span>$ ${subtotal.toFixed(2)}</span></li>
-            <li>Total <span>$ ${subtotal.toFixed(2)}</span></li>
-        `);
+        var $orderTotal = $('.checkout__order__total ul');
+        
+        if ($orderList.length) {
+            $orderList.empty();
+            $orderList.append('<li><span class="top__text">Product</span><span class="top__text__right">Total</span></li>');
+            
+            cart.forEach(function(item) {
+                var total = item.price * item.quantity;
+                subtotal += total;
+                $orderList.append('<li>' + item.name + ' x' + item.quantity + ' <span>$ ' + total.toFixed(2) + '</span></li>');
+            });
+        }
+        
+        if ($orderTotal.length) {
+            $orderTotal.html(
+                '<li>Subtotal <span>$ ' + subtotal.toFixed(2) + '</span></li>' +
+                '<li>Total <span>$ ' + subtotal.toFixed(2) + '</span></li>'
+            );
+        }
+        
         // Place order button
-        $('.site-btn').on('click', function(e) {
+        $(document).on('click', '.site-btn', function(e) {
             if ($(this).text().toLowerCase().includes('place')) {
                 e.preventDefault();
                 localStorage.removeItem('cart');
                 updateCartCount();
-                alert('Order placed! Thank you.');
-                window.location.href = 'index.html';
+                showMessage('Order placed successfully! Thank you for your purchase.');
+                setTimeout(function() {
+                    window.location.href = 'index.html';
+                }, 2000);
             }
         });
     }
 
-    // Show success message for all site-btn and primary-btn (Subscribe, Send Message, etc)
-    $(document).on('click', '.site-btn, .primary-btn', function(e) {
+    // Newsletter subscription and contact form buttons
+    $(document).on('click', '.site-btn', function(e) {
         var btnText = $(this).text().toLowerCase();
+        var $form = $(this).closest('form');
+        
         if (btnText.includes('subscribe')) {
             e.preventDefault();
-            alert('Subscribed successfully!');
+            var email = $form.find('input[type="text"], input[type="email"]').val();
+            if (email && email.includes('@')) {
+                showMessage('Successfully subscribed to newsletter!');
+                $form[0].reset();
+            } else {
+                showMessage('Please enter a valid email address');
+            }
         } else if (btnText.includes('send message')) {
             e.preventDefault();
-            alert('Message sent!');
+            showMessage('Message sent successfully! We will get back to you soon.');
+            $form[0].reset();
         } else if (btnText.includes('apply')) {
             e.preventDefault();
-            alert('Coupon applied!');
+            var coupon = $form.find('input[type="text"]').val();
+            if (coupon) {
+                showMessage('Coupon code applied!');
+            } else {
+                showMessage('Please enter a coupon code');
+            }
+        }
+    });
+
+    // Wishlist functionality
+    $(document).on('click', '.icon_heart_alt', function(e) {
+        e.preventDefault();
+        var $productItem = $(this).closest('.product__item, .product__details__text');
+        var name = $productItem.find('h6 a, h3').first().text().trim();
+        
+        if (name) {
+            showMessage('Added "' + name + '" to wishlist!');
+        }
+    });
+
+    // Continue shopping button
+    $(document).on('click', 'a[href="#"]', function(e) {
+        var linkText = $(this).text().toLowerCase();
+        if (linkText.includes('continue shopping')) {
+            e.preventDefault();
+            window.location.href = 'shop.html';
         }
     });
 
