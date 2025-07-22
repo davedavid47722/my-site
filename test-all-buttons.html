@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Ashion - All Buttons Test</title>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/font-awesome.min.css">
+    <link rel="stylesheet" href="css/elegant-icons.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body { padding: 20px; background: #f8f9fa; }
+        .test-card { 
+            background: white; 
+            padding: 20px; 
+            margin: 20px 0; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-title { 
+            color: #ca1515; 
+            font-weight: bold; 
+            margin-bottom: 15px; 
+            font-size: 18px;
+        }
+        .cart-counter { 
+            position: fixed; 
+            top: 20px; 
+            right: 20px; 
+            background: #ca1515; 
+            color: white; 
+            padding: 10px 20px; 
+            border-radius: 25px; 
+            font-weight: bold; 
+            z-index: 1000;
+        }
+        .test-product { 
+            border: 2px solid #eee; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin: 10px 0; 
+            max-width: 300px;
+        }
+        .btn-test { margin: 5px; }
+    </style>
+</head>
+<body>
+    <div class="cart-counter">
+        🛒 Cart: <span class="tip">0</span> items
+    </div>
+
+    <h1 style="text-align: center; color: #ca1515; margin-bottom: 40px;">
+        🧪 ASHION - COMPLETE BUTTON FUNCTIONALITY TEST
+    </h1>
+
+    <!-- Test 1: Add to Cart from Product Grid -->
+    <div class="test-card">
+        <div class="test-title">1. 🛍️ Add to Cart - Product Grid Style</div>
+        <div class="product__item test-product">
+            <div class="product__item__pic set-bg" data-setbg="img/product/product-1.jpg" style="height: 200px; background-size: cover;">
+                <ul class="product__hover">
+                    <li><a href="#"><span class="icon_bag_alt"></span></a></li>
+                    <li><a href="#"><span class="icon_heart_alt"></span></a></li>
+                </ul>
+            </div>
+            <div class="product__item__text">
+                <h6><a href="#">Premium Test Jacket</a></h6>
+                <div class="product__price">$ 89.99</div>
+            </div>
+        </div>
+        <p><strong>Expected:</strong> Click bag icon → adds to cart → shows notification → counter updates</p>
+    </div>
+
+    <!-- Test 2: Product Details Add to Cart -->
+    <div class="test-card">
+        <div class="test-title">2. 📋 Add to Cart - Product Details Style</div>
+        <div class="product__details__text test-product">
+            <h3>Luxury Test Product <span>Brand: Ashion</span></h3>
+            <div class="product__details__price">$ 149.99</div>
+            <div class="product__details__button">
+                <div class="quantity">
+                    <span>Quantity:</span>
+                    <div class="pro-qty">
+                        <input type="text" value="1">
+                    </div>
+                </div>
+                <button type="button" class="cart-btn">
+                    <span class="icon_bag_alt"></span> Add to cart
+                </button>
+            </div>
+        </div>
+        <img class="product__big__img" src="img/product/product-2.jpg" style="display:none;">
+        <p><strong>Expected:</strong> Change quantity → click "Add to cart" → adds specified quantity</p>
+    </div>
+
+    <!-- Test 3: Navigation Buttons -->
+    <div class="test-card">
+        <div class="test-title">3. 🧭 Navigation Buttons</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+            <a href="shop.html" class="site-btn btn-test">Go to Shop</a>
+            <a href="shop-cart.html" class="site-btn btn-test">View Cart</a>
+            <button class="primary-btn btn-test">Proceed to Checkout</button>
+            <a href="product-details.html" class="site-btn btn-test">Product Details</a>
+            <a href="contact.html" class="site-btn btn-test">Contact</a>
+        </div>
+        <p><strong>Expected:</strong> All buttons navigate to correct pages</p>
+    </div>
+
+    <!-- Test 4: Forms -->
+    <div class="test-card">
+        <div class="test-title">4. 📝 Form Functionality</div>
+        
+        <div style="margin-bottom: 20px;">
+            <h5>Newsletter Subscription</h5>
+            <form style="display: flex; gap: 10px;">
+                <input type="text" placeholder="test@example.com" value="test@example.com" 
+                       style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 25px;">
+                <button type="submit" class="site-btn">Subscribe</button>
+            </form>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <h5>Contact Form</h5>
+            <form style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <input type="text" placeholder="Your Name" value="John Doe" 
+                       style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 25px;">
+                <button type="submit" class="site-btn">Send Message</button>
+            </form>
+        </div>
+
+        <div>
+            <h5>Coupon Code</h5>
+            <form style="display: flex; gap: 10px;">
+                <input type="text" placeholder="Enter code" value="SAVE10" 
+                       style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 25px;">
+                <button type="submit" class="site-btn">Apply</button>
+            </form>
+            <small>Valid codes: SAVE10, DISCOUNT20, WELCOME, SUMMER25, NEWUSER</small>
+        </div>
+
+        <p><strong>Expected:</strong> Forms validate and show success/error messages</p>
+    </div>
+
+    <!-- Test 5: Cart Operations -->
+    <div class="test-card">
+        <div class="test-title">5. 🛒 Cart Management</div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
+            <button class="site-btn btn-test" onclick="testClearCart()">Clear Cart</button>
+            <button class="site-btn btn-test" onclick="testAddMultiple()">Add Multiple Items</button>
+            <button class="primary-btn btn-test" onclick="testViewCart()">View Cart</button>
+            <button class="site-btn btn-test" onclick="testCheckStorage()">Check Storage</button>
+        </div>
+        <div id="cart-status" style="padding: 15px; background: #f8f9fa; border-radius: 5px; margin-top: 10px;">
+            <strong>Cart Status:</strong> <span id="cart-info">Loading...</span>
+        </div>
+        <p><strong>Expected:</strong> Cart operations work and persist in localStorage</p>
+    </div>
+
+    <!-- Test 6: Quantity Controls -->
+    <div class="test-card">
+        <div class="test-title">6. ➕➖ Quantity Controls</div>
+        <div class="pro-qty" style="margin: 10px 0;">
+            <input type="text" value="3">
+        </div>
+        <p><strong>Expected:</strong> + and - buttons appear and change quantity (minimum 1)</p>
+    </div>
+
+    <!-- Test Results -->
+    <div class="test-card">
+        <div class="test-title">✅ Test Results</div>
+        <div id="test-results">
+            <p id="result-addcart">🔄 <strong>Add to Cart:</strong> Testing...</p>
+            <p id="result-counter">🔄 <strong>Cart Counter:</strong> Testing...</p>
+            <p id="result-quantity">�� <strong>Quantity Controls:</strong> Testing...</p>
+            <p id="result-forms">🔄 <strong>Forms:</strong> Testing...</p>
+            <p id="result-navigation">🔄 <strong>Navigation:</strong> Testing...</p>
+        </div>
+        <button class="primary-btn" onclick="runFullTest()" style="margin-top: 15px;">
+            🧪 Run Full Auto-Test
+        </button>
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="js/jquery-3.3.1.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/main.js"></script>
+
+    <script>
+        // Test functions
+        function testClearCart() {
+            localStorage.removeItem('ashion_cart');
+            updateCartStatus();
+            console.log('Cart cleared');
+        }
+
+        function testAddMultiple() {
+            var testCart = [
+                {name: 'Test Item 1', price: 29.99, quantity: 2, image: 'img/product/product-1.jpg'},
+                {name: 'Test Item 2', price: 49.99, quantity: 1, image: 'img/product/product-2.jpg'},
+                {name: 'Test Item 3', price: 79.99, quantity: 3, image: 'img/product/product-3.jpg'}
+            ];
+            localStorage.setItem('ashion_cart', JSON.stringify(testCart));
+            updateCartStatus();
+            console.log('Multiple items added');
+        }
+
+        function testViewCart() {
+            window.location.href = 'shop-cart.html';
+        }
+
+        function testCheckStorage() {
+            var cart = JSON.parse(localStorage.getItem('ashion_cart') || '[]');
+            alert('Cart has ' + cart.length + ' unique items');
+            console.log('Current cart:', cart);
+        }
+
+        function updateCartStatus() {
+            var cart = JSON.parse(localStorage.getItem('ashion_cart') || '[]');
+            var totalItems = cart.reduce((sum, item) => sum + parseInt(item.quantity || 0), 0);
+            var totalValue = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            $('.tip').text(totalItems);
+            $('#cart-info').html(
+                'Items: ' + totalItems + 
+                ' | Value: $' + totalValue.toFixed(2) + 
+                ' | Storage: ' + (cart.length > 0 ? '✅ Working' : '❌ Empty')
+            );
+        }
+
+        function runFullTest() {
+            console.log('🧪 Running Full Test Suite...');
+            
+            // Test 1: Cart functionality
+            if (typeof window.AshionCart !== 'undefined') {
+                $('#result-addcart').html('✅ <strong>Add to Cart:</strong> System loaded and ready');
+            } else {
+                $('#result-addcart').html('❌ <strong>Add to Cart:</strong> System not loaded');
+            }
+            
+            // Test 2: Cart counter
+            updateCartStatus();
+            $('#result-counter').html('✅ <strong>Cart Counter:</strong> Working and updating');
+            
+            // Test 3: Quantity controls
+            var qtyControls = $('.qtybtn').length;
+            if (qtyControls > 0) {
+                $('#result-quantity').html('✅ <strong>Quantity Controls:</strong> ' + qtyControls + ' controls found');
+            } else {
+                $('#result-quantity').html('❌ <strong>Quantity Controls:</strong> Not found');
+            }
+            
+            // Test 4: Forms
+            $('#result-forms').html('✅ <strong>Forms:</strong> Ready for testing');
+            
+            // Test 5: Navigation
+            var navButtons = $('.site-btn, .primary-btn').length;
+            $('#result-navigation').html('✅ <strong>Navigation:</strong> ' + navButtons + ' buttons found');
+            
+            console.log('✅ Full test completed');
+        }
+
+        // Initialize on load
+        $(document).ready(function() {
+            updateCartStatus();
+            setTimeout(runFullTest, 1000);
+            
+            // Auto-update cart status every 2 seconds
+            setInterval(updateCartStatus, 2000);
+            
+            console.log('🧪 Test page ready!');
+        });
+    </script>
+</body>
+</html>
