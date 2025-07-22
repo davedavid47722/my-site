@@ -40,9 +40,15 @@
             <li><a href="#"><span class="icon_heart_alt"></span>
                 <div class="tip">0</div>
             </a></li>
-            <li><a href="shop-cart.html"><span class="icon_bag_alt"></span>
-                <div class="tip">0</div>
-            </a></li>
+            <li>
+              <button class="add-to-cart-btn" 
+                      data-product-id="1" 
+                      data-product-name="Buttons tweed blazer" 
+                      data-product-price="59.0">
+                <span class="icon_bag_alt"></span>
+              </button>
+            </li>
+                        
         </ul>
         <div class="offcanvas__logo">
             <a href="./index.html"><img src="img/logo.png" alt=""></a>
@@ -95,9 +101,12 @@
                             <li><a href="#"><span class="icon_heart_alt"></span>
                                 <div class="tip">0</div>
                             </a></li>
-                            <li><a href="shop-cart.html"><span class="icon_bag_alt"></span>
-                                <div class="tip">0</div>
-                            </a></li>
+                            <li>
+                            <a href="shop-cart.html" class="cart-btn">
+                              <span class="icon_bag_alt"></span>
+                              <div class="tip" id="cart-count">0</div>
+                            </a>    
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -743,10 +752,10 @@
                 <div class="footer__widget">
                     <h6>Quick links</h6>
                     <ul>
-                        <li><a href="#">About</a></li>
-                        <li><a href="#">Blogs</a></li>
-                        <li><a href="#">Contact</a></li>
-                        <li><a href="#">FAQ</a></li>
+                        <a href="about.html">About</a>
+                        <a href="blog.html">Blogs</a>
+                        <a href="contact.html">Contact</a>
+                        <a href="faq.html">FAQ</a>
                     </ul>
                 </div>
             </div>
@@ -813,6 +822,49 @@
 <script src="js/owl.carousel.min.js"></script>
 <script src="js/jquery.nicescroll.min.js"></script>
 <script src="js/main.js"></script>
+<script>
+function getCart() {
+  return JSON.parse(localStorage.getItem('cart') || '[]');
+}
+
+function saveCart(cart) {
+  localStorage.setItem('cart', JSON.stringify(cart));
+}
+
+function addToCart(product) {
+  const cart = getCart();
+  const existing = cart.find(item => item.id === product.id);
+  if (existing) {
+    existing.qty += 1;
+  } else {
+    cart.push({ ...product, qty: 1 });
+  }
+  saveCart(cart);
+  updateCartCount();
+}
+
+function updateCartCount() {
+  const cart = getCart();
+  document.querySelectorAll('#cart-count').forEach(el => {
+    el.textContent = cart.reduce((sum, item) => sum + item.qty, 0);
+  });
+}
+
+document.querySelectorAll('.add-to-cart-btn').forEach(btn => {
+  btn.addEventListener('click', function(e) {
+    e.preventDefault();
+    const product = {
+      id: this.dataset.productId,
+      name: this.dataset.productName,
+      price: parseFloat(this.dataset.productPrice)
+    };
+    addToCart(product);
+    alert(product.name + ' added to cart!');
+  });
+});
+
+updateCartCount();
+</script>
 </body>
 
 </html>
