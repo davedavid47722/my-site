@@ -208,20 +208,30 @@ Created: Colorib
     var proQty = $('.pro-qty');
 	proQty.prepend('<span class="dec qtybtn">-</span>');
 	proQty.append('<span class="inc qtybtn">+</span>');
-	proQty.on('click', '.qtybtn', function () {
+	
+    // Quantity button functionality
+	$(document).on('click', '.qtybtn', function () {
 		var $button = $(this);
-		var oldValue = $button.parent().find('input').val();
+		var $input = $button.parent().find('input');
+		var oldValue = parseInt($input.val()) || 0;
+        var newVal;
+        
 		if ($button.hasClass('inc')) {
-			var newVal = parseFloat(oldValue) + 1;
+			newVal = oldValue + 1;
 		} else {
-			// Don't allow decrementing below zero
-			if (oldValue > 0) {
-				var newVal = parseFloat(oldValue) - 1;
-			} else {
-				newVal = 0;
-			}
+			// Don't allow decrementing below 1
+			newVal = oldValue > 1 ? oldValue - 1 : 1;
 		}
-		$button.parent().find('input').val(newVal);
+        
+		$input.val(newVal);
+        
+        // If this is on cart page, update cart immediately
+        if (window.location.pathname.includes('shop-cart.html')) {
+            var idx = $button.closest('tr').data('idx');
+            if (typeof idx !== 'undefined') {
+                updateCartItemQuantity(idx, newVal);
+            }
+        }
     });
     
     /*-------------------
@@ -232,153 +242,466 @@ Created: Colorib
         $(this).addClass('active');
     });
 
-    // === CART & BUTTON FUNCTIONALITY ADDED ===
+    // ===============================================
+    // COMPLETE CART & BUTTON FUNCTIONALITY
+    // ===============================================
 
-    // Utility functions for cart
+    // Cart management functions
     function getCart() {
-        return JSON.parse(localStorage.getItem('cart') || '[]');
+        try {
+            return JSON.parse(localStorage.getItem('ashion_cart') || '[]');
+        } catch (e) {
+            console.error('Error reading cart:', e);
+            return [];
+        }
     }
+
     function setCart(cart) {
-        localStorage.setItem('cart', JSON.stringify(cart));
+        try {
+            localStorage.setItem('ashion_cart', JSON.stringify(cart));
+            updateCartCount();
+        } catch (e) {
+            console.error('Error saving cart:', e);
+        }
     }
+
     function updateCartCount() {
         var cart = getCart();
-        var count = cart.reduce((sum, item) => sum + item.quantity, 0);
-        // Update all cart icons
-        $('.icon_bag_alt').each(function() {
-            var tip = $(this).siblings('.tip');
-            if (tip.length) tip.text(count);
-            else $(this).after('<div class="tip">' + count + '</div>');
-        });
+        var totalItems = cart.reduce(function(sum, item) { 
+            return sum + (parseInt(item.quantity) || 0); 
+        }, 0);
+        
+        // Update all cart counters
+        $('.tip').text(totalItems);
+        
+        // Update cart badge in header
+        $('.header__right__widget .tip, .offcanvas__widget .tip').text(totalItems);
+        
+        console.log('Cart updated. Total items:', totalItems);
     }
 
-    // Add to cart button (on product-details.html)
-    $('button.cart-btn, .cart-btn').on('click', function(e) {
-        e.preventDefault();
-        var $pd = $(this).closest('.product__details__text');
-        var name = $pd.find('h3').clone().children().remove().end().text().trim();
-        var priceText = $pd.find('.product__details__price').text().trim();
-        var price = parseFloat(priceText.split('$')[1]);
-        var img = $('.product__big__img').first().attr('src');
-        var qty = parseInt($pd.find('.pro-qty input').val()) || 1;
+    function addToCart(productData) {
         var cart = getCart();
-        var existing = cart.find(item => item.name === name);
-        if (existing) {
-            existing.quantity += qty;
+        var existingItem = cart.find(function(item) { 
+            return item.name === productData.name; 
+        });
+        
+        if (existingItem) {
+            existingItem.quantity = parseInt(existingItem.quantity) + parseInt(productData.quantity);
         } else {
-            cart.push({ name, price, img, quantity: qty });
+            cart.push(productData);
         }
+        
         setCart(cart);
-        updateCartCount();
-        alert('Added to cart!');
-    });
-
-    // On all pages, update cart count on load
-    $(document).ready(function() {
-        updateCartCount();
-    });
-
-    // Cart page logic (shop-cart.html)
-    if (window.location.pathname.includes('shop-cart.html')) {
-        function renderCart() {
-            var cart = getCart();
-            var $tbody = $('.shop__cart__table tbody');
-            $tbody.empty();
-            var subtotal = 0;
-            cart.forEach((item, idx) => {
-                var total = item.price * item.quantity;
-                subtotal += total;
-                $tbody.append(`
-                    <tr data-idx="${idx}">
-                        <td class="cart__product__item">
-                            <img src="${item.img}" alt="">
-                            <div class="cart__product__item__title">
-                                <h6>${item.name}</h6>
-                            </div>
-                        </td>
-                        <td class="cart__price">$ ${item.price.toFixed(2)}</td>
-                        <td class="cart__quantity">
-                            <div class="pro-qty"><input type="text" value="${item.quantity}"></div>
-                        </td>
-                        <td class="cart__total">$ ${(total).toFixed(2)}</td>
-                        <td class="cart__close"><span class="icon_close"></span></td>
-                    </tr>
-                `);
-            });
-            // Update totals
-            $('.cart__total__procced ul').html(`
-                <li>Subtotal <span>$ ${subtotal.toFixed(2)}</span></li>
-                <li>Total <span>$ ${subtotal.toFixed(2)}</span></li>
-            `);
-        }
-        renderCart();
-        // Remove item
-        $('.shop__cart__table').on('click', '.icon_close', function() {
-            var idx = $(this).closest('tr').data('idx');
-            var cart = getCart();
-            cart.splice(idx, 1);
-            setCart(cart);
-            renderCart();
-            updateCartCount();
-        });
-        // Update quantity
-        $('.shop__cart__table').on('change', '.pro-qty input', function() {
-            var idx = $(this).closest('tr').data('idx');
-            var cart = getCart();
-            var val = parseInt($(this).val());
-            if (val > 0) cart[idx].quantity = val;
-            setCart(cart);
-            renderCart();
-            updateCartCount();
-        });
-        // Proceed to checkout
-        $('button.primary-btn, .primary-btn').on('click', function(e) {
-            e.preventDefault();
-            window.location.href = 'checkout.html';
-        });
+        showNotification('Product added to cart successfully!', 'success');
     }
 
-    // Checkout page logic (checkout.html)
-    if (window.location.pathname.includes('checkout.html')) {
+    function removeFromCart(index) {
         var cart = getCart();
-        var subtotal = 0;
-        var $orderList = $('.checkout__order__product ul');
-        $orderList.empty();
-        $orderList.append('<li><span class="top__text">Product</span><span class="top__text__right">Total</span></li>');
-        cart.forEach((item, idx) => {
-            var total = item.price * item.quantity;
-            subtotal += total;
-            $orderList.append(`<li>${item.name} x${item.quantity} <span>$ ${total.toFixed(2)}</span></li>`);
-        });
-        $('.checkout__order__total ul').html(`
-            <li>Subtotal <span>$ ${subtotal.toFixed(2)}</span></li>
-            <li>Total <span>$ ${subtotal.toFixed(2)}</span></li>
-        `);
-        // Place order button
-        $('.site-btn').on('click', function(e) {
-            if ($(this).text().toLowerCase().includes('place')) {
-                e.preventDefault();
-                localStorage.removeItem('cart');
-                updateCartCount();
-                alert('Order placed! Thank you.');
-                window.location.href = 'index.html';
-            }
-        });
+        if (index >= 0 && index < cart.length) {
+            cart.splice(index, 1);
+            setCart(cart);
+            showNotification('Item removed from cart', 'info');
+        }
     }
 
-    // Show success message for all site-btn and primary-btn (Subscribe, Send Message, etc)
-    $(document).on('click', '.site-btn, .primary-btn', function(e) {
+    function updateCartItemQuantity(index, quantity) {
+        var cart = getCart();
+        if (index >= 0 && index < cart.length && quantity > 0) {
+            cart[index].quantity = parseInt(quantity);
+            setCart(cart);
+            renderCartPage();
+        }
+    }
+
+    function clearCart() {
+        localStorage.removeItem('ashion_cart');
+        updateCartCount();
+    }
+
+    function showNotification(message, type) {
+        type = type || 'success';
+        
+        // Create notification element
+        var notification = $('<div class="notification notification-' + type + '">' + message + '</div>');
+        
+        // Add styles
+        notification.css({
+            'position': 'fixed',
+            'top': '20px',
+            'right': '20px',
+            'background': type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8',
+            'color': 'white',
+            'padding': '15px 20px',
+            'border-radius': '5px',
+            'z-index': '9999',
+            'font-size': '14px',
+            'box-shadow': '0 4px 6px rgba(0,0,0,0.1)',
+            'max-width': '300px'
+        });
+        
+        // Add to body
+        $('body').append(notification);
+        
+        // Fade in
+        notification.fadeIn(300);
+        
+        // Remove after 3 seconds
+        setTimeout(function() {
+            notification.fadeOut(300, function() {
+                $(this).remove();
+            });
+        }, 3000);
+    }
+
+    // Add to cart from product listings (index.html, shop.html)
+    $(document).on('click', '.product__hover .icon_bag_alt', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        var $productItem = $(this).closest('.product__item');
+        var name = $productItem.find('h6 a').text().trim();
+        var priceText = $productItem.find('.product__price').text().trim();
+        var price = parseFloat(priceText.replace(/[^0-9.]/g, ''));
+        var img = $productItem.find('.set-bg').data('setbg') || 'img/product/product-1.jpg';
+        
+        if (!name) {
+            name = 'Product';
+        }
+        if (!price || isNaN(price)) {
+            price = 0;
+        }
+        
+        var productData = {
+            name: name,
+            price: price,
+            image: img,
+            quantity: 1
+        };
+        
+        addToCart(productData);
+    });
+
+    // Add to cart from product details page
+    $(document).on('click', '.cart-btn', function(e) {
+        e.preventDefault();
+        
+        var $productSection = $(this).closest('.product__details__text');
+        var name = $productSection.find('h3').clone().children().remove().end().text().trim();
+        var priceText = $productSection.find('.product__details__price').text().trim();
+        var price = parseFloat(priceText.replace(/[^0-9.]/g, ''));
+        var quantity = parseInt($productSection.find('.pro-qty input').val()) || 1;
+        var img = $('.product__big__img').first().attr('src') || 'img/product/product-1.jpg';
+        
+        if (!name) {
+            showNotification('Product name not found', 'error');
+            return;
+        }
+        
+        if (!price || isNaN(price)) {
+            showNotification('Product price not found', 'error');
+            return;
+        }
+        
+        var productData = {
+            name: name,
+            price: price,
+            image: img,
+            quantity: quantity
+        };
+        
+        addToCart(productData);
+    });
+
+    // Cart icon click - navigate to cart page (but not from product hover buttons)
+    $(document).on('click', '.header__right__widget .icon_bag_alt, .offcanvas__widget .icon_bag_alt', function(e) {
+        e.preventDefault();
+        window.location.href = 'shop-cart.html';
+    });
+
+    // Wishlist functionality
+    $(document).on('click', '.icon_heart_alt', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        var $productItem = $(this).closest('.product__item, .product__details__text');
+        var name = $productItem.find('h6 a, h3').first().text().trim() || 'Product';
+        
+        // Store in wishlist (using localStorage)
+        var wishlist = JSON.parse(localStorage.getItem('ashion_wishlist') || '[]');
+        if (!wishlist.includes(name)) {
+            wishlist.push(name);
+            localStorage.setItem('ashion_wishlist', JSON.stringify(wishlist));
+            showNotification('Added "' + name + '" to wishlist!', 'success');
+        } else {
+            showNotification('Product already in wishlist', 'info');
+        }
+    });
+
+    // ===============================================
+    // CART PAGE FUNCTIONALITY
+    // ===============================================
+    
+    function renderCartPage() {
+        if (!window.location.pathname.includes('shop-cart.html')) {
+            return;
+        }
+        
+        var cart = getCart();
+        var $tbody = $('.shop__cart__table tbody');
+        var $cartTotal = $('.cart__total__procced ul');
+        
+        // Clear existing content
+        $tbody.empty();
+        
+        if (cart.length === 0) {
+            $tbody.append(
+                '<tr><td colspan="5" style="text-align: center; padding: 50px; font-size: 18px;">' +
+                'Your cart is empty<br><br>' +
+                '<a href="shop.html" class="primary-btn">Continue Shopping</a>' +
+                '</td></tr>'
+            );
+            $cartTotal.html('<li>Subtotal <span>$ 0.00</span></li><li>Total <span>$ 0.00</span></li>');
+            return;
+        }
+        
+        var subtotal = 0;
+        
+        cart.forEach(function(item, index) {
+            var itemTotal = item.price * item.quantity;
+            subtotal += itemTotal;
+            
+            $tbody.append(
+                '<tr data-idx="' + index + '">' +
+                    '<td class="cart__product__item">' +
+                        '<img src="' + item.image + '" alt="' + item.name + '" style="width: 80px; height: 80px; object-fit: cover;">' +
+                        '<div class="cart__product__item__title">' +
+                            '<h6>' + item.name + '</h6>' +
+                        '</div>' +
+                    '</td>' +
+                    '<td class="cart__price">$ ' + item.price.toFixed(2) + '</td>' +
+                    '<td class="cart__quantity">' +
+                        '<div class="pro-qty">' +
+                            '<span class="dec qtybtn">-</span>' +
+                            '<input type="text" value="' + item.quantity + '">' +
+                            '<span class="inc qtybtn">+</span>' +
+                        '</div>' +
+                    '</td>' +
+                    '<td class="cart__total">$ ' + itemTotal.toFixed(2) + '</td>' +
+                    '<td class="cart__close"><span class="icon_close"></span></td>' +
+                '</tr>'
+            );
+        });
+        
+        // Update totals
+        $cartTotal.html(
+            '<li>Subtotal <span>$ ' + subtotal.toFixed(2) + '</span></li>' +
+            '<li>Total <span>$ ' + subtotal.toFixed(2) + '</span></li>'
+        );
+    }
+
+    // Remove item from cart
+    $(document).on('click', '.cart__close .icon_close', function(e) {
+        e.preventDefault();
+        var index = $(this).closest('tr').data('idx');
+        removeFromCart(index);
+        renderCartPage();
+    });
+
+    // Update cart quantity on input change
+    $(document).on('change', '.shop__cart__table .pro-qty input', function() {
+        var index = $(this).closest('tr').data('idx');
+        var quantity = parseInt($(this).val()) || 1;
+        updateCartItemQuantity(index, quantity);
+    });
+
+    // Continue shopping button
+    $(document).on('click', 'a[href="#"]', function(e) {
+        var linkText = $(this).text().toLowerCase();
+        if (linkText.includes('continue shopping')) {
+            e.preventDefault();
+            window.location.href = 'shop.html';
+        }
+    });
+
+    // Update cart button
+    $(document).on('click', '.update__btn a', function(e) {
+        e.preventDefault();
+        renderCartPage();
+        showNotification('Cart updated successfully!', 'success');
+    });
+
+    // ===============================================
+    // CHECKOUT PAGE FUNCTIONALITY
+    // ===============================================
+    
+    function renderCheckoutPage() {
+        if (!window.location.pathname.includes('checkout.html')) {
+            return;
+        }
+        
+        var cart = getCart();
+        var $orderList = $('.checkout__order__product ul');
+        var $orderTotal = $('.checkout__order__total ul');
+        
+        if ($orderList.length) {
+            $orderList.empty();
+            $orderList.append('<li><span class="top__text">Product</span><span class="top__text__right">Total</span></li>');
+            
+            var subtotal = 0;
+            
+            cart.forEach(function(item) {
+                var itemTotal = item.price * item.quantity;
+                subtotal += itemTotal;
+                $orderList.append(
+                    '<li>' + item.name + ' x' + item.quantity + 
+                    ' <span>$ ' + itemTotal.toFixed(2) + '</span></li>'
+                );
+            });
+            
+            if ($orderTotal.length) {
+                $orderTotal.html(
+                    '<li>Subtotal <span>$ ' + subtotal.toFixed(2) + '</span></li>' +
+                    '<li>Total <span>$ ' + subtotal.toFixed(2) + '</span></li>'
+                );
+            }
+        }
+    }
+
+    // Proceed to checkout button
+    $(document).on('click', '.primary-btn', function(e) {
         var btnText = $(this).text().toLowerCase();
+        
+        if (btnText.includes('proceed to checkout') || btnText.includes('checkout')) {
+            var cart = getCart();
+            if (cart.length === 0) {
+                e.preventDefault();
+                showNotification('Your cart is empty! Add some products first.', 'error');
+                return;
+            }
+            
+            if (!window.location.pathname.includes('checkout.html')) {
+                e.preventDefault();
+                window.location.href = 'checkout.html';
+            }
+        }
+    });
+
+    // Place order button
+    $(document).on('click', '.site-btn', function(e) {
+        var btnText = $(this).text().toLowerCase();
+        
+        if (btnText.includes('place order')) {
+            e.preventDefault();
+            
+            var cart = getCart();
+            if (cart.length === 0) {
+                showNotification('Your cart is empty!', 'error');
+                return;
+            }
+            
+            // Simulate order processing
+            showNotification('Processing your order...', 'info');
+            
+            setTimeout(function() {
+                clearCart();
+                showNotification('Order placed successfully! Thank you for your purchase.', 'success');
+                
+                setTimeout(function() {
+                    window.location.href = 'index.html';
+                }, 2000);
+            }, 1500);
+        }
+    });
+
+    // ===============================================
+    // FORM FUNCTIONALITY
+    // ===============================================
+    
+    // Newsletter subscription
+    $(document).on('click', '.site-btn', function(e) {
+        var btnText = $(this).text().toLowerCase();
+        var $form = $(this).closest('form');
+        
         if (btnText.includes('subscribe')) {
             e.preventDefault();
-            alert('Subscribed successfully!');
-        } else if (btnText.includes('send message')) {
-            e.preventDefault();
-            alert('Message sent!');
-        } else if (btnText.includes('apply')) {
-            e.preventDefault();
-            alert('Coupon applied!');
+            
+            var email = $form.find('input[type="text"], input[type="email"]').val().trim();
+            if (email && email.includes('@') && email.includes('.')) {
+                showNotification('Successfully subscribed to newsletter!', 'success');
+                $form[0].reset();
+            } else {
+                showNotification('Please enter a valid email address', 'error');
+            }
         }
+    });
+
+    // Contact form
+    $(document).on('click', '.site-btn', function(e) {
+        var btnText = $(this).text().toLowerCase();
+        var $form = $(this).closest('form');
+        
+        if (btnText.includes('send message') || btnText.includes('send')) {
+            e.preventDefault();
+            
+            var hasContent = false;
+            $form.find('input[type="text"], input[type="email"], textarea').each(function() {
+                if ($(this).val().trim()) {
+                    hasContent = true;
+                }
+            });
+            
+            if (hasContent) {
+                showNotification('Message sent successfully! We will get back to you soon.', 'success');
+                $form[0].reset();
+            } else {
+                showNotification('Please fill in the required fields', 'error');
+            }
+        }
+    });
+
+    // Coupon application
+    $(document).on('click', '.site-btn', function(e) {
+        var btnText = $(this).text().toLowerCase();
+        var $form = $(this).closest('form');
+        
+        if (btnText.includes('apply')) {
+            e.preventDefault();
+            
+            var coupon = $form.find('input[type="text"]').val().trim();
+            if (coupon) {
+                // Simulate coupon validation
+                var validCoupons = ['SAVE10', 'DISCOUNT20', 'WELCOME'];
+                if (validCoupons.includes(coupon.toUpperCase())) {
+                    showNotification('Coupon "' + coupon + '" applied successfully!', 'success');
+                } else {
+                    showNotification('Invalid coupon code', 'error');
+                }
+            } else {
+                showNotification('Please enter a coupon code', 'error');
+            }
+        }
+    });
+
+    // ===============================================
+    // INITIALIZATION
+    // ===============================================
+    
+    // Initialize on page load
+    $(document).ready(function() {
+        updateCartCount();
+        
+        // Initialize cart page if we're on it
+        if (window.location.pathname.includes('shop-cart.html')) {
+            renderCartPage();
+        }
+        
+        // Initialize checkout page if we're on it
+        if (window.location.pathname.includes('checkout.html')) {
+            renderCheckoutPage();
+        }
+        
+        console.log('Ashion cart system initialized');
     });
 
 })(jQuery);
